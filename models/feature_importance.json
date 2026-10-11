@@ -1,0 +1,158 @@
+{
+  "logistic_regression": [
+    {
+      "feature": "checking_status_no checking account",
+      "weight": -0.9747,
+      "impact": "Decreases Risk"
+    },
+    {
+      "feature": "purpose_education",
+      "weight": 0.9219,
+      "impact": "Increases Risk"
+    },
+    {
+      "feature": "purpose_car (used)",
+      "weight": -0.8664,
+      "impact": "Decreases Risk"
+    },
+    {
+      "feature": "credit_history_critical account / other credits elsewhere",
+      "weight": -0.8362,
+      "impact": "Decreases Risk"
+    },
+    {
+      "feature": "savings_status_>= 1000 DM",
+      "weight": -0.6435,
+      "impact": "Decreases Risk"
+    },
+    {
+      "feature": "foreign_worker_no",
+      "weight": -0.6246,
+      "impact": "Decreases Risk"
+    },
+    {
+      "feature": "checking_status_< 0 DM",
+      "weight": 0.6183,
+      "impact": "Increases Risk"
+    },
+    {
+      "feature": "property_magnitude_unknown / no property",
+      "weight": 0.6105,
+      "impact": "Increases Risk"
+    },
+    {
+      "feature": "employment_4 - 7 years",
+      "weight": -0.5822,
+      "impact": "Decreases Risk"
+    },
+    {
+      "feature": "savings_status_< 100 DM",
+      "weight": 0.5762,
+      "impact": "Increases Risk"
+    }
+  ],
+  "random_forest": [
+    {
+      "feature": "checking_status_no checking account",
+      "weight": 0.1003,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "credit_amount",
+      "weight": 0.0879,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "duration",
+      "weight": 0.0847,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "checking_status_< 0 DM",
+      "weight": 0.0566,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "age",
+      "weight": 0.0548,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "credit_history_critical account / other credits elsewhere",
+      "weight": 0.0318,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "installment_rate",
+      "weight": 0.0301,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "savings_status_< 100 DM",
+      "weight": 0.0271,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "checking_status_0 - 200 DM",
+      "weight": 0.0233,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "savings_status_unknown / no savings account",
+      "weight": 0.0224,
+      "impact": "Relative Importance"
+    }
+  ],
+  "adaboost": [
+    {
+      "feature": "checking_status_no checking account",
+      "weight": 0.6004,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "credit_amount",
+      "weight": 0.112,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "property_magnitude_unknown / no property",
+      "weight": 0.1095,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "duration",
+      "weight": 0.0512,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "savings_status_unknown / no savings account",
+      "weight": 0.046,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "other_payment_plans_bank",
+      "weight": 0.0426,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "credit_history_critical account / other credits elsewhere",
+      "weight": 0.0383,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "job_management / self-employed / qualified",
+      "weight": 0.0,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "job_skilled employee / official",
+      "weight": 0.0,
+      "impact": "Relative Importance"
+    },
+    {
+      "feature": "job_unemployed / unskilled non-resident",
+      "weight": 0.0,
+      "impact": "Relative Importance"
+    }
+  ]
+}

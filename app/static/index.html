@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Risk Profiling & Loan Default Prediction</title>
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Retail-Eye Custom Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Retail-Eye Navigation Bar -->
+    <nav class="navbar navbar-expand-lg sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="#">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span>CREDIT-RISK <span style="font-weight: 300; opacity: 0.8;">PROFILER</span></span>
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="nav nav-pills ms-auto" id="mainTab" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="assessment-tab" data-bs-toggle="pill" data-bs-target="#assessment-pane" type="button" role="tab">
+                            Borrower Assessment
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="kmeans-tab" data-bs-toggle="pill" data-bs-target="#kmeans-pane" type="button" role="tab">
+                            K-Means Risk Profiling
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="benchmarks-tab" data-bs-toggle="pill" data-bs-target="#benchmarks-pane" type="button" role="tab">
+                            Model Benchmark & ROC
+                        </button>
+                    </li>
+                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
+                        <button type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2 px-3 py-1" data-bs-toggle="modal" data-bs-target="#fieldInfoModal" style="border-radius: 8px; font-weight: 600; height: 38px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            <span>Input Field Guide</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container-fluid px-4 py-4">
+
+        <!-- Tab Contents -->
+        <div class="tab-content" id="mainTabContent">
+
+            <!-- TAB 1: BORROWER ASSESSMENT -->
+            <div class="tab-pane fade show active" id="assessment-pane" role="tabpanel">
+                
+                <!-- Presets Bar -->
+                <div class="mc-panel py-3 px-4 mb-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <span class="fw-semibold text-muted small text-uppercase">Sample Presets:</span>
+                            <button type="button" class="mc-btn-outline" onclick="loadPreset('prime_low_risk')">
+                                <span class="badge-tag badge-success">●</span> Prime Low Risk
+                            </button>
+                            <button type="button" class="mc-btn-outline" onclick="loadPreset('moderate_standard_risk')">
+                                <span class="badge-tag badge-warning">●</span> Moderate Standard
+                            </button>
+                            <button type="button" class="mc-btn-outline" onclick="loadPreset('high_exposure_risk')">
+                                <span class="badge-tag badge-danger">●</span> High-Exposure Subprime
+                            </button>
+                            <div class="vr mx-2 text-muted opacity-25 d-none d-md-block" style="height: 24px;"></div>
+                            <button type="button" class="mc-btn-outline" data-bs-toggle="modal" data-bs-target="#fieldInfoModal" title="Click to view what input to provide for each field">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                <span>What to put in each field?</span>
+                            </button>
+                        </div>
+                        <span class="text-muted small">Trained on UCI German Credit Data (1,000 Records)</span>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Left Column: Input Form -->
+                    <div class="col-lg-7">
+                        <div class="mc-panel">
+                            <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                <h2 class="h5 mb-0">Applicant Financial & Demographic Parameters</h2>
+                                <span class="text-muted small">Input features</span>
+                            </div>
+
+                            <div id="assessmentAlert" class="alert alert-danger d-none mb-3 py-2 px-3 small rounded" role="alert"></div>
+
+                            <form id="assessmentForm" onsubmit="submitAssessment(event)">
+                                
+                                <!-- Section 1: Loan & Financial Exposure -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary fw-bold text-uppercase small mb-3">1. Loan Request & Credit Terms</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Credit Amount (DM)</label>
+                                            <input type="number" id="credit_amount" class="mc-input" min="1" max="10000000" step="any" placeholder="e.g. 5000" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Duration (Months)</label>
+                                            <input type="number" id="duration" class="mc-input" min="1" max="360" placeholder="e.g. 24" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Installment Rate (% Income)</label>
+                                            <select id="installment_rate" class="mc-select" required>
+                                                <option value="1">1% of disposable income</option>
+                                                <option value="2">2% of disposable income</option>
+                                                <option value="3">3% of disposable income</option>
+                                                <option value="4">4% of disposable income</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="mc-label">Loan Purpose</label>
+                                            <select id="purpose" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="mc-label">Existing Credits at Bank</label>
+                                            <select id="existing_credits" class="mc-select" required>
+                                                <option value="1">1 existing credit</option>
+                                                <option value="2">2 existing credits</option>
+                                                <option value="3">3 existing credits</option>
+                                                <option value="4">4 or more existing credits</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 2: Financial Standing & History -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary fw-bold text-uppercase small mb-3">2. Financial Standing & Accounts</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="mc-label">Checking Account Balance</label>
+                                            <select id="checking_status" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="mc-label">Savings Account / Bonds</label>
+                                            <select id="savings_status" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="mc-label">Credit History</label>
+                                            <select id="credit_history" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="mc-label">Other Payment Plans</label>
+                                            <select id="other_payment_plans" class="mc-select" required></select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 3: Demographics & Employment -->
+                                <div class="mb-4">
+                                    <h6 class="text-primary fw-bold text-uppercase small mb-3">3. Personal & Socioeconomic Factors</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Age (Years)</label>
+                                            <input type="number" id="age" class="mc-input" min="16" max="120" placeholder="e.g. 35" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Present Employment</label>
+                                            <select id="employment" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Job Classification</label>
+                                            <select id="job" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Housing Status</label>
+                                            <select id="housing" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Property Ownership</label>
+                                            <select id="property_magnitude" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="mc-label">Personal Status / Sex</label>
+                                            <select id="personal_status" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="mc-label">Residence Since (Yrs)</label>
+                                            <select id="residence_since" class="mc-select" required>
+                                                <option value="1">1 year</option>
+                                                <option value="2">2 years</option>
+                                                <option value="3">3 years</option>
+                                                <option value="4">4+ years</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="mc-label">Other Debtors / Guarantors</label>
+                                            <select id="other_parties" class="mc-select" required></select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="mc-label">Dependents</label>
+                                            <select id="num_dependents" class="mc-select" required>
+                                                <option value="1">1 dependent</option>
+                                                <option value="2">2 or more</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="mc-label">Foreign Worker</label>
+                                            <select id="foreign_worker" class="mc-select" required>
+                                                <option value="yes">Yes</option>
+                                                <option value="no">No</option>
+                                            </select>
+                                        </div>
+                                        <input type="hidden" id="own_telephone" value="yes">
+                                    </div>
+                                </div>
+
+                                <!-- Classifier Selection & Submit -->
+                                <div class="p-3 bg-light rounded-3 mb-3 border">
+                                    <div class="row align-items-center g-3">
+                                        <div class="col-md-7">
+                                            <label class="mc-label mb-1">Supervised Prediction Model</label>
+                                            <select id="model_name" class="mc-select mb-0">
+                                                <option value="random_forest">Random Forest Classifier (Ensemble Bagging)</option>
+                                                <option value="logistic_regression">Logistic Regression (Interpretable Linear)</option>
+                                                <option value="adaboost">AdaBoost Classifier (Iterative Boosting)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5 pt-md-3">
+                                            <button type="submit" class="mc-button mb-0" id="submitBtn">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                                Assess Borrower
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Dual AI Assessment Results -->
+                    <div class="col-lg-5">
+                        
+                        <!-- Prediction Card (Supervised) -->
+                        <div class="mc-panel mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="h6 text-uppercase fw-bold text-muted mb-0">Default Prediction Outcome</h3>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span id="liveStatusBadge" class="badge-tag" style="background-color: #f1f5f9; color: #475569; font-size: 0.72rem;">● Live Ready</span>
+                                    <span id="recommendationBadge" class="badge-tag badge-success">Awaiting Input</span>
+                                </div>
+                            </div>
+
+                            <div class="row align-items-center my-3">
+                                <div class="col-5 text-center">
+                                    <div class="risk-meter-container">
+                                        <canvas id="gaugeChart" width="170" height="170"></canvas>
+                                        <div class="risk-score-value">
+                                            <div class="percent" id="probPercent">--%</div>
+                                            <div class="label">Default Risk</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-7">
+                                    <div class="small fw-semibold text-muted text-uppercase mb-1">Underwriting Decision</div>
+                                    <h4 class="h5 fw-bold mb-2" id="recommendationText">Ready to assess</h4>
+                                    <p class="text-muted small mb-0" id="decisionDetails">Select or modify borrower details and click 'Assess Borrower' to run inference.</p>
+                                </div>
+                            </div>
+
+                            <!-- Cross-Model Probability Comparison Table -->
+                            <div class="mt-4 pt-3 border-top">
+                                <span class="mc-label mb-2">Cross-Model Comparison</span>
+                                <table class="mc-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Model Architecture</th>
+                                            <th>Default Risk</th>
+                                            <th>Signal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="crossModelTableBody">
+                                        <tr>
+                                            <td>Random Forest</td>
+                                            <td>--%</td>
+                                            <td><span class="badge-tag badge-warning">Pending</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Logistic Regression</td>
+                                            <td>--%</td>
+                                            <td><span class="badge-tag badge-warning">Pending</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>AdaBoost</td>
+                                            <td>--%</td>
+                                            <td><span class="badge-tag badge-warning">Pending</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Key Risk Drivers -->
+                            <div class="mt-4 pt-3 border-top">
+                                <span class="mc-label mb-2">Key Drivers for Selected Model</span>
+                                <div id="topDriversContainer" class="small text-muted">
+                                    Run assessment to view feature importance weights.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Unsupervised Profiling Card (K-Means) -->
+                        <div class="mc-panel">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3 class="h6 text-uppercase fw-bold text-muted mb-0">K-Means Risk Profiler</h3>
+                                <span id="kmeansPersonaBadge" class="badge-tag badge-success">Cluster Awaiting</span>
+                            </div>
+
+                            <div class="mb-3">
+                                <h4 class="h6 fw-bold mb-1" id="personaTitle">Awaiting Assessment</h4>
+                                <p class="text-muted small mb-0" id="personaDescription">K-Means partitions applicants by multidimensional exposure (duration, amount, rate, age).</p>
+                            </div>
+
+                            <!-- Radar Chart -->
+                            <div style="height: 240px; position: relative;">
+                                <canvas id="radarChart"></canvas>
+                            </div>
+
+                            <div class="d-flex justify-content-between small text-muted mt-3 pt-2 border-top">
+                                <span>Cluster Default Rate: <strong id="clusterDefRate" class="text-dark">--%</strong></span>
+                                <span>Population Share: <strong id="clusterSizePct" class="text-dark">--%</strong></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB 2: K-MEANS PROFILING DEEP DIVE -->
+            <div class="tab-pane fade" id="kmeans-pane" role="tabpanel">
+                <div class="mc-panel mb-4">
+                    <h2 class="h5 mb-2">Unsupervised Credit Risk Profiling Architecture</h2>
+                    <p class="text-muted">
+                        Using K-Means clustering ($K=3$), borrowers in the German Credit dataset are partitioned into distinct behavioral exposure tiers based on Duration, Credit Amount, Installment Rate, Age, and Existing Credit count.
+                    </p>
+                    <div class="row g-4 mt-2" id="clustersDetailCards">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: MODEL BENCHMARK & ROC -->
+            <div class="tab-pane fade" id="benchmarks-pane" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="mc-panel">
+                            <h2 class="h5 mb-3">Test-Set Performance Comparison (80/20 Stratified Split)</h2>
+                            <table class="mc-table mb-4">
+                                <thead>
+                                    <tr>
+                                        <th>Model</th>
+                                        <th>Accuracy</th>
+                                        <th>Precision</th>
+                                        <th>Recall</th>
+                                        <th>F1-Score</th>
+                                        <th>ROC-AUC</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="benchmarkTableBody">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+
+                            <h3 class="h6 fw-bold text-uppercase text-muted mb-3">Confusion Matrices Breakdown</h3>
+                            <div class="row g-3" id="confusionMatricesContainer">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="mc-panel">
+                            <h2 class="h5 mb-3">Receiver Operating Characteristic (ROC)</h2>
+                            <p class="text-muted small">Comparative True Positive vs False Positive trade-off across all three classifiers.</p>
+                            <div style="height: 340px; position: relative;">
+                                <canvas id="rocChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Field Guide Info Modal -->
+    <div class="modal fade" id="fieldInfoModal" tabindex="-1" aria-labelledby="fieldInfoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="modal-title h5 fw-bold text-dark mb-1" id="fieldInfoModalLabel">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="me-1"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            Applicant Input Field Guide
+                        </h4>
+                        <p class="text-muted small mb-0">Complete reference for all 20 financial & demographic parameters used by the ML engine.</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+
+                    <!-- Search Filter Box -->
+                    <div class="mb-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            </span>
+                            <input type="text" id="guideSearchInput" class="form-control border-start-0 ps-0" placeholder="Type to filter fields (e.g., credit amount, duration, checking, age)..." onkeyup="filterGuideFields()">
+                        </div>
+                    </div>
+
+                    <div id="guideCardsList">
+                        <!-- Category 1: Loan Request & Financial Exposure -->
+                        <div class="guide-category mb-4">
+                            <h6 class="text-primary fw-bold text-uppercase small mb-3 border-bottom pb-2">1. Loan Request & Credit Terms</h6>
+
+                            <div class="field-guide-card" data-field="credit amount loan dm money">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Credit Amount (DM)</strong>
+                                    <span class="type-pill type-number">Number (Positive Float)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Total loan principal amount requested in Deutsche Mark (or currency units).</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>What to enter:</strong> Any positive number (e.g. <code>2500</code>, <code>10000</code>, <code>50000</code>, <code>100000</code>). Typical loans range from 500 to 20,000 DM, but any amount is accepted.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="duration months term tenure">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Duration (Months)</strong>
+                                    <span class="type-pill type-number">Number (Integer)</span>
+                                </div>
+                                <p class="text-muted small mb-1">The scheduled loan repayment period / maturity term in months.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>What to enter:</strong> Number of months (e.g. <code>12</code> for 1 yr, <code>24</code> for 2 yrs, <code>36</code> for 3 yrs, <code>48</code>, <code>60</code>). Longer terms increase default probability.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="installment rate percentage income disposable">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Installment Rate (% Income)</strong>
+                                    <span class="type-pill type-dropdown">Dropdown (Scale 1–4)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Installment payment size as a percentage of the applicant's monthly disposable income.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>1</code> (1%), <code>2</code> (2%), <code>3</code> (3%), <code>4</code> (4%). Rate of 4 means a heavy debt service burden relative to income.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="loan purpose car furniture education business">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Loan Purpose</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Primary commercial or personal reason for borrowing.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>car (new)</code>, <code>car (used)</code>, <code>furniture/equipment</code>, <code>radio/television</code>, <code>domestic appliances</code>, <code>repairs</code>, <code>education</code>, <code>business</code>, <code>vacation</code>, <code>retraining</code>, <code>others</code>.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="existing credits loans bank count">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Existing Credits at Bank</strong>
+                                    <span class="type-pill type-dropdown">Dropdown (Integer 1–4+)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Number of active, open credit lines or previous loans the applicant holds at this bank.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>1</code>, <code>2</code>, <code>3</code>, or <code>4 or more existing credits</code>.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category 2: Financial Standing & History -->
+                        <div class="guide-category mb-4">
+                            <h6 class="text-primary fw-bold text-uppercase small mb-3 border-bottom pb-2">2. Financial Standing & Accounts</h6>
+
+                            <div class="field-guide-card" data-field="checking status account balance dm overdrawn salary">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Checking Account Balance</strong>
+                                    <span class="type-pill type-dropdown">Dropdown (Key Driver)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Status of applicant's primary transactional checking account.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong>
+                                    <ul class="mb-0 ps-3">
+                                        <li><code>&lt; 0 DM</code>: Account is overdrawn / negative balance (highest risk indicator).</li>
+                                        <li><code>0 - 200 DM</code>: Modest positive balance.</li>
+                                        <li><code>&gt;= 200 DM</code>: Substantial balance or continuous salary deposits for &ge; 1 year.</li>
+                                        <li><code>no checking account</code>: Customer has no checking account at this bank.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="savings status account bonds liquid reserves">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Savings Account / Bonds</strong>
+                                    <span class="type-pill type-dropdown">Dropdown (Key Driver)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Liquid financial reserves, savings accounts, or investment bonds.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>&lt; 100 DM</code> (Low cushion), <code>100 - 500 DM</code>, <code>500 - 1000 DM</code>, <code>&gt;= 1000 DM</code> (Strong cushion), or <code>unknown / no savings account</code>.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="credit history repayment past delay critical">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Credit History</strong>
+                                    <span class="type-pill type-dropdown">Dropdown (Key Driver)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Historical track record of debt repayment and punctuality.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong>
+                                    <ul class="mb-0 ps-3">
+                                        <li><code>all credits at this bank paid duly</code>: Flawless repayment history with this institution.</li>
+                                        <li><code>existing credits paid duly till now</code>: Active loans paid on schedule.</li>
+                                        <li><code>delay in paying off in the past</code>: Past record of delinquent/late payments.</li>
+                                        <li><code>critical account / other credits elsewhere</code>: Heavily leveraged or problematic external accounts.</li>
+                                        <li><code>no credits taken / all paid duly</code>: Clean debt history or first-time borrower.</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="other payment plans installment store bank">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Other Payment Plans</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Additional non-bank payment installment obligations or retail store charge accounts.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>none</code> (no other payment plans), <code>bank</code> (installments at another bank), <code>stores</code> (retail store credit lines).
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category 3: Personal & Socioeconomic Factors -->
+                        <div class="guide-category mb-4">
+                            <h6 class="text-primary fw-bold text-uppercase small mb-3 border-bottom pb-2">3. Personal & Socioeconomic Factors</h6>
+
+                            <div class="field-guide-card" data-field="age years borrower demographic">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Age (Years)</strong>
+                                    <span class="type-pill type-number">Number (Years)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Applicant's biological age in completed years.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>What to enter:</strong> Integer between <code>18</code> and <code>100+</code> (e.g. <code>25</code>, <code>35</code>, <code>48</code>). Older applicants correlate with more established credit profiles.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="employment job tenure years unemployed">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Present Employment</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Continuous time working at current employer or business.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>unemployed</code>, <code>&lt; 1 year</code>, <code>1 - 4 years</code>, <code>4 - 7 years</code>, <code>&gt;= 7 years</code>. Longer employment signals income stability.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="job classification skill employee professional management">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Job Classification</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Professional role and skill qualification level.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>unemployed / unskilled non-resident</code>, <code>unskilled resident</code>, <code>skilled employee / official</code>, <code>management / self-employed / qualified</code>.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="housing rent own free living home">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Housing Status</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Residential living status.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>own</code> (Homeowner), <code>rent</code> (Tenant paying rent), <code>for free</code> (Living with parents, family, or subsidized housing).
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="property magnitude real estate car insurance assets">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Property Ownership</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Highest value tangible asset owned that could serve as collateral.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>real estate</code>, <code>building society savings / life insurance</code>, <code>car or other</code>, <code>unknown / no property</code>.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="personal status sex male female single married divorced">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Personal Status / Sex</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Marital and family demographic status.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>male : single</code>, <code>male : married/widowed</code>, <code>female : single</code>, <code>female : divorced/separated/married</code>, <code>male : divorced/separated</code>.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="residence since years address location">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Residence Since (Years)</strong>
+                                    <span class="type-pill type-dropdown">Dropdown (Scale 1–4)</span>
+                                </div>
+                                <p class="text-muted small mb-1">Number of continuous years lived at the current residential address.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>1 year</code>, <code>2 years</code>, <code>3 years</code>, <code>4+ years</code>.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="other parties debtors guarantor co-applicant">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Other Debtors / Guarantors</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Third parties who co-sign or legally guarantee the credit obligation.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>none</code> (individual loan), <code>co-applicant</code> (joint borrower), <code>guarantor</code> (external party backing repayment).
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="dependents maintenance children family">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Dependents</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Number of persons financially dependent on the applicant for maintenance.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>1 dependent</code> or <code>2 or more</code>.
+                                </div>
+                            </div>
+
+                            <div class="field-guide-card" data-field="foreign worker citizenship expat">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Foreign Worker</strong>
+                                    <span class="type-pill type-dropdown">Dropdown</span>
+                                </div>
+                                <p class="text-muted small mb-1">Whether the applicant is working as a foreign national.</p>
+                                <div class="small bg-light p-2 rounded">
+                                    <strong>Options:</strong> <code>Yes</code> or <code>No</code>.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category 4: Supervised Prediction Models -->
+                        <div class="guide-category mb-2">
+                            <h6 class="text-primary fw-bold text-uppercase small mb-3 border-bottom pb-2">4. Prediction Models</h6>
+
+                            <div class="field-guide-card" data-field="random forest ensemble bagging trees">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Random Forest Classifier</strong>
+                                    <span class="badge-tag badge-success">Bagging Ensemble</span>
+                                </div>
+                                <p class="text-muted small mb-0">Trains 150 randomized decision trees. Captures non-linear interactions across demographic and financial attributes without overfitting. Recommended default.</p>
+                            </div>
+
+                            <div class="field-guide-card" data-field="logistic regression linear log-odds interpretable">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">Logistic Regression</strong>
+                                    <span class="badge-tag badge-success">Linear Log-Odds</span>
+                                </div>
+                                <p class="text-muted small mb-0">Standard regulatory compliant model that outputs direct log-odds coefficients and well-calibrated probabilities. Achieves high sensitivity (80% recall on defaulters).</p>
+                            </div>
+
+                            <div class="field-guide-card" data-field="adaboost boosting stumps iterative">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark">AdaBoost Classifier</strong>
+                                    <span class="badge-tag badge-warning">Boosting Ensemble</span>
+                                </div>
+                                <p class="text-muted small mb-0">Sequentially trains adaptive decision stumps that iteratively focus weight on borderline / hard-to-classify borrowers.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light py-2 px-4">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close Guide</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- App Logic -->
+    <script src="/static/js/app.js?v=2.0"></script>
+</body>
+</html>

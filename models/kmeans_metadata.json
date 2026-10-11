@@ -1,0 +1,105 @@
+{
+  "n_clusters": 3,
+  "features": [
+    "duration",
+    "credit_amount",
+    "installment_rate",
+    "age",
+    "existing_credits"
+  ],
+  "feature_bounds": {
+    "duration": {
+      "min": 4.0,
+      "max": 72.0
+    },
+    "credit_amount": {
+      "min": 250.0,
+      "max": 18424.0
+    },
+    "installment_rate": {
+      "min": 1.0,
+      "max": 4.0
+    },
+    "age": {
+      "min": 19.0,
+      "max": 75.0
+    },
+    "existing_credits": {
+      "min": 1.0,
+      "max": 4.0
+    }
+  },
+  "clusters": {
+    "1": {
+      "cluster_id": 1,
+      "size": 300,
+      "percentage": 30.0,
+      "historical_default_rate": 23.0,
+      "feature_means": {
+        "duration": 17.32,
+        "credit_amount": 2383.5666666666666,
+        "installment_rate": 3.1166666666666667,
+        "age": 37.843333333333334,
+        "existing_credits": 2.1233333333333335
+      },
+      "persona_title": "Tier 1: Prime / Conservative Risk",
+      "description": "Low default probability. Established profile with manageable exposure.",
+      "badge_type": "success"
+    },
+    "0": {
+      "cluster_id": 0,
+      "size": 523,
+      "percentage": 52.3,
+      "historical_default_rate": 28.5,
+      "feature_means": {
+        "duration": 16.7112810707457,
+        "credit_amount": 2210.53154875717,
+        "installment_rate": 3.017208413001912,
+        "age": 34.233269598470365,
+        "existing_credits": 1.0
+      },
+      "persona_title": "Tier 2: Moderate / Standard Risk",
+      "description": "Moderate leverage. Typical balanced demographic profile.",
+      "badge_type": "warning"
+    },
+    "2": {
+      "cluster_id": 2,
+      "size": 177,
+      "percentage": 17.7,
+      "historical_default_rate": 46.3,
+      "feature_means": {
+        "duration": 39.36158192090395,
+        "credit_amount": 7910.056497175141,
+        "installment_rate": 2.598870056497175,
+        "age": 35.53107344632768,
+        "existing_credits": 1.3954802259887005
+      },
+      "persona_title": "Tier 3: Elevated / High-Exposure Risk",
+      "description": "Significant exposure with extended loan durations or high debt burden.",
+      "badge_type": "danger"
+    }
+  },
+  "cluster_centers_scaled": [
+    [
+      -0.34778015520140726,
+      -0.3759674596703397,
+      0.0395369210898834,
+      -0.11545786011664905,
+      -0.7049259983890862
+    ],
+    [
+      -0.2972757279573419,
+      -0.31463630908201706,
+      0.12848544603944337,
+      0.20205610408065733,
+      1.2406928505635935
+    ],
+    [
+      1.531478754562366,
+      1.6441913792779261,
+      -0.33459572622509665,
+      -0.001312827023670481,
+      -0.019952305150201376
+    ]
+  ]
+}
